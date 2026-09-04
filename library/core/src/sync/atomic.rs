@@ -331,8 +331,7 @@ pub impl(self) unsafe trait AtomicPrimitive: Sized {
     reason = "implementation detail which may disappear or be replaced at any time",
     issue = "none"
 )]
-pub impl(self) unsafe trait AtomicLoadStore: AtomicPrimitive
-{
+pub impl(self) unsafe trait AtomicLoadStore: AtomicPrimitive {
     /// Temporary implementation detail.
     type OpType: Sized + Copy;
 }
@@ -993,12 +992,10 @@ impl<T: AtomicLoadStore> Atomic<T> {
         // SAFETY: any data races are prevented by atomic intrinsics and the raw
         // pointer passed in is valid because we got it from a reference.
         unsafe {
-            transmute_unchecked(
-                atomic_load::<T::OpType, /* VOLATILE */ false>(
-                    self.v.get().cast(),
-                    order,
-                )
-            )
+            transmute_unchecked(atomic_load::<T::OpType, /* VOLATILE */ false>(
+                self.v.get().cast(),
+                order,
+            ))
         }
     }
 
@@ -1059,12 +1056,7 @@ impl<T: AtomicLoadStore> Atomic<T> {
     pub const unsafe fn load_volatile(self: *const Self, order: Ordering) -> T {
         // SAFETY: follows from our own safety requirements.
         unsafe {
-            transmute_unchecked(
-                atomic_load::<T::OpType, /* VOLATILE */ true>(
-                    self.cast(),
-                    order,
-                )
-            )
+            transmute_unchecked(atomic_load::<T::OpType, /* VOLATILE */ true>(self.cast(), order))
         }
     }
 
@@ -1191,9 +1183,11 @@ impl<T: AtomicCas> Atomic<T> {
     pub const fn swap(&self, v: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_swap::<T::OpType>(self.as_ptr().cast(), transmute_unchecked(v), order)
-            )
+            transmute_unchecked(atomic_swap::<T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(v),
+                order,
+            ))
         }
     }
 
@@ -1311,15 +1305,13 @@ impl<T: AtomicCas> Atomic<T> {
     ) -> Result<T, T> {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_compare_exchange::<T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(current),
-                    transmute_unchecked(new),
-                    success,
-                    failure
-                )
-            )
+            transmute_unchecked(atomic_compare_exchange::<T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(current),
+                transmute_unchecked(new),
+                success,
+                failure,
+            ))
         }
     }
 
@@ -1384,15 +1376,13 @@ impl<T: AtomicCas> Atomic<T> {
         // an `UnsafeCell` that we have by reference) and the atomic operation
         // itself allows us to safely mutate the `UnsafeCell` contents.
         unsafe {
-            transmute_unchecked(
-                atomic_compare_exchange_weak::<T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(current),
-                    transmute_unchecked(new),
-                    success,
-                    failure
-                )
-            )
+            transmute_unchecked(atomic_compare_exchange_weak::<T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(current),
+                transmute_unchecked(new),
+                success,
+                failure,
+            ))
         }
     }
 }
@@ -1537,13 +1527,10 @@ impl<T: AtomicCas + Copy> Atomic<T> {
     #[stable(feature = "atomic_try_update", since = "1.95.0")]
     #[cfg_attr(miri, track_caller)] // even without panics, this helps for Miri backtraces
     #[rustc_should_not_be_called_on_const_items]
-    pub fn update(
-        &self,
-        set_order: Ordering,
-        fetch_order: Ordering,
-        mut f: impl FnMut(T) -> T,
-    ) -> T
-        where T: AtomicCas {
+    pub fn update(&self, set_order: Ordering, fetch_order: Ordering, mut f: impl FnMut(T) -> T) -> T
+    where
+        T: AtomicCas,
+    {
         let mut prev = self.load(fetch_order);
         loop {
             match self.compare_exchange_weak(prev, f(prev), set_order, fetch_order) {
@@ -1658,13 +1645,11 @@ impl<T: AtomicInteger> Atomic<T> {
     pub const fn fetch_add(&self, val: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_add::<T::OpType, T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(val),
-                    order
-                )
-            )
+            transmute_unchecked(atomic_add::<T::OpType, T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(val),
+                order,
+            ))
         }
     }
 
@@ -1694,13 +1679,11 @@ impl<T: AtomicInteger> Atomic<T> {
     pub const fn fetch_sub(&self, val: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_sub::<T::OpType, T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(val),
-                    order
-                )
-            )
+            transmute_unchecked(atomic_sub::<T::OpType, T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(val),
+                order,
+            ))
         }
     }
 
@@ -1745,24 +1728,20 @@ impl<T: AtomicInteger> Atomic<T> {
         if T::IS_SIGNED {
             // SAFETY: data races are prevented by atomic intrinsics.
             unsafe {
-                transmute_unchecked(
-                    atomic_max::<T::OpType>(
-                        self.as_ptr().cast(),
-                        transmute_unchecked(val),
-                        order
-                    )
-                )
+                transmute_unchecked(atomic_max::<T::OpType>(
+                    self.as_ptr().cast(),
+                    transmute_unchecked(val),
+                    order,
+                ))
             }
         } else {
             // SAFETY: data races are prevented by atomic intrinsics.
             unsafe {
-                transmute_unchecked(
-                    atomic_umax::<T::OpType>(
-                        self.as_ptr().cast(),
-                        transmute_unchecked(val),
-                        order
-                    )
-                )
+                transmute_unchecked(atomic_umax::<T::OpType>(
+                    self.as_ptr().cast(),
+                    transmute_unchecked(val),
+                    order,
+                ))
             }
         }
     }
@@ -1810,24 +1789,20 @@ impl<T: AtomicInteger> Atomic<T> {
         if T::IS_SIGNED {
             // SAFETY: data races are prevented by atomic intrinsics.
             unsafe {
-                transmute_unchecked(
-                    atomic_min::<T::OpType>(
-                        self.as_ptr().cast(),
-                        transmute_unchecked(val),
-                        order
-                    )
-                )
+                transmute_unchecked(atomic_min::<T::OpType>(
+                    self.as_ptr().cast(),
+                    transmute_unchecked(val),
+                    order,
+                ))
             }
         } else {
             // SAFETY: data races are prevented by atomic intrinsics.
             unsafe {
-                transmute_unchecked(
-                    atomic_umin::<T::OpType>(
-                        self.as_ptr().cast(),
-                        transmute_unchecked(val),
-                        order
-                    )
-                )
+                transmute_unchecked(atomic_umin::<T::OpType>(
+                    self.as_ptr().cast(),
+                    transmute_unchecked(val),
+                    order,
+                ))
             }
         }
     }
@@ -1863,13 +1838,11 @@ impl<T: AtomicBitwise> Atomic<T> {
     pub const fn fetch_nand(&self, val: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_nand::<T::OpType, T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(val),
-                    order
-                )
-            )
+            transmute_unchecked(atomic_nand::<T::OpType, T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(val),
+                order,
+            ))
         }
     }
 
@@ -1902,13 +1875,11 @@ impl<T: AtomicBitwise> Atomic<T> {
     pub const fn fetch_and(&self, val: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_and::<T::OpType, T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(val),
-                    order
-                )
-            )
+            transmute_unchecked(atomic_and::<T::OpType, T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(val),
+                order,
+            ))
         }
     }
 
@@ -1941,13 +1912,11 @@ impl<T: AtomicBitwise> Atomic<T> {
     pub const fn fetch_or(&self, val: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_or::<T::OpType, T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(val),
-                    order
-                )
-            )
+            transmute_unchecked(atomic_or::<T::OpType, T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(val),
+                order,
+            ))
         }
     }
 
@@ -1980,13 +1949,11 @@ impl<T: AtomicBitwise> Atomic<T> {
     pub const fn fetch_xor(&self, val: T, order: Ordering) -> T {
         // SAFETY: data races are prevented by atomic intrinsics.
         unsafe {
-            transmute_unchecked(
-                atomic_xor::<T::OpType, T::OpType>(
-                    self.as_ptr().cast(),
-                    transmute_unchecked(val),
-                    order
-                )
-            )
+            transmute_unchecked(atomic_xor::<T::OpType, T::OpType>(
+                self.as_ptr().cast(),
+                transmute_unchecked(val),
+                order,
+            ))
         }
     }
 }
